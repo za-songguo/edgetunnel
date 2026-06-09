@@ -38,3 +38,34 @@ jobs:
           echo "[Error] 由于上游仓库的 workflow 文件变更，导致 GitHub 自动暂停了本次自动更新，你需要手动 Sync Fork 一次，详细教程请查看项目README.md "
           echo "[Error] Due to a change in the workflow file of the upstream repository, GitHub has automatically suspended the scheduled automatic update. You need to manually sync your fork. Please refer to the project README.md for instructions. "
           exit 1
+
+      # Step 3: Re-checkout to get synced code
+      - name: Re-checkout synced code
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      # Step 4: Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Step 5: Install dependencies and obfuscate
+      - name: Obfuscate _worker.js
+        run: |
+          npm install
+          npm run obfuscate
+
+      # Step 6: Commit and push obfuscated code
+      - name: Commit and push obfuscated code
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add _worker.js
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: obfuscate _worker.js [skip ci]"
+            git push
+          fi
